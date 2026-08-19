@@ -1,154 +1,68 @@
 # Animal Image Classification with CNN
 
-A convolutional neural network for classifying images across 10 animal categories using TensorFlow/Keras.
+A convolutional neural network for classifying images across 10 animal categories (Animals-10 dataset), built and trained in Google Colab with TensorFlow/Keras.
 
-## Overview
-
-This project investigates the use of convolutional neural networks for multi-class image classification.
-
-The model was trained on the Animals-10 dataset using image preprocessing, data augmentation, Batch Normalization, dropout regularization, and early stopping.
-
-### Results
-
-* **Task:** 10-class animal image classification
-* **Input:** 128 × 128 images
-* **Framework:** TensorFlow / Keras
-* **Training:** Google Colab
-* **Validation Accuracy:** 76%
-* **Evaluation:** Accuracy, precision, recall, F1-score, and confusion matrix
-
-> The reported 76% result refers to validation performance. Test-set performance is reported separately in the evaluation output.
-
-## Model Architecture
-
-The CNN consists of three convolutional blocks followed by global average pooling and fully connected classification layers.
+## What's actually in this repo
 
 ```text
-Input (128 × 128)
+cnn-10-animals/
+├── README.md
+├── LICENSE
+├── src/
+│   ├── data_preparation.ipynb   # downloads Animals-10 via Kaggle API, converts to
+│   │                             # grayscale + RGB tensors (128×128), splits train/val/test
+│   └── animals_cnn.ipynb        # builds and trains 4 models (see below), evaluates on
+│                                 # the held-out test set
+└── results/
+    ├── training_curves.png      # accuracy/loss curves for the best-performing model
+    ├── confusion_matrix.png     # confusion matrix on the test set
+    └── sample_predictions.png   # example predictions, correct and incorrect
+```
+
+*(Two earlier placeholder files, `src/train.py` and `src/prepare_data.ipynb`, were removed — they were empty leftovers from an earlier repo layout and never contained code; all the actual training code lives in the two notebooks above.)*
+
+## Models trained and actual results
+
+`animals_cnn.ipynb` runs four experiments in sequence, in this order:
+
+| # | Model | Input | Test Accuracy |
+|---|---|---|---|
+| 1 | MLP baseline (no convolution) | Grayscale, flattened | 20.67% (barely above the 10% random-guess baseline — included to show *why* a CNN is needed) |
+| 2 | CNN | Grayscale | 65.28% |
+| 3 | CNN | RGB | **68.60%** ← best verified result, shown in `results/` above |
+| 4 | CNN (deeper, 4 conv blocks) | RGB | *Not verified* — this run's final test accuracy wasn't captured in the committed notebook output before it was saved. If you rerun the last cells and get a number here, update this table and swap in fresh result images. Until then, 68.60% is the only number this repo actually backs up. |
+
+The three images in `results/` are the real, unedited outputs from experiment #3's evaluation cell — not regenerated or touched up.
+
+## Architecture (best model, experiment #3)
+
+```text
+Input (128 × 128 × 3)
         ↓
-Random Flip / Rotation / Zoom
+Random Flip / Rotation / Zoom  (train-time only)
         ↓
-Conv2D (32) + BatchNorm + MaxPooling
+Conv2D(32) + BatchNorm + MaxPool
         ↓
-Conv2D (64) + BatchNorm + MaxPooling
+Conv2D(64) + BatchNorm + MaxPool
         ↓
-Conv2D (128) + BatchNorm + MaxPooling
+Conv2D(128) + BatchNorm + MaxPool
         ↓
 Global Average Pooling
         ↓
-Dense (128, ReLU)
+Dense(128, ReLU) + Dropout
         ↓
-Dropout
-        ↓
-Dense (10, Softmax)
+Dense(10, Softmax)
 ```
 
-## Training
+Trained with Adam (lr=0.001), sparse categorical cross-entropy, batch size 32, up to 30 epochs with early stopping (patience 8, monitoring validation loss).
 
-The model was trained using:
+## Running it
 
-* Adam optimizer
-* Learning rate: 0.001
-* Sparse categorical cross-entropy
-* Batch size: 32
-* Maximum 30 epochs
-* Early stopping based on validation loss
-* Patience: 8 epochs
+1. Open `src/data_preparation.ipynb` in Colab. You'll need a Kaggle API key (`kaggle.json`) to download the Animals-10 dataset — the notebook prompts for it. This produces `.npy` arrays saved to Google Drive.
+2. Open `src/animals_cnn.ipynb` in Colab, pointed at the same Drive folder. Runs all four experiments and produces the evaluation plots.
 
-Data augmentation was applied during training using:
+## What I'd improve next
 
-* Random horizontal flips
-* Random rotations
-* Random zoom
-
-## Evaluation
-
-The model was evaluated on a separate test set that was not used during training.
-
-Evaluation includes:
-
-* Overall test accuracy
-* Confusion matrix
-* Precision
-* Recall
-* F1-score
-* Individual prediction examples with confidence scores
-
-## Results
-
-### Training Curves
-
-![Training Curves](results/training_curves.png)
-
-### Confusion Matrix
-
-![Confusion Matrix](results/confusion_matrix.png)
-
-### Sample Predictions
-
-![Sample Predictions](results/sample_predictions.png)
-
-## Project Structure
-
-```text
-animal-image-classification/
-├── README.md
-├── src/
-│   ├── prepare_data.py
-│   ├── train.py
-│   └── evaluate.py
-├── notebooks/
-│   └── animal_cnn.ipynb
-├── results/
-│   ├── training_curves.png
-│   ├── confusion_matrix.png
-│   └── sample_predictions.png
-├── requirements.txt
-├── .gitignore
-└── LICENSE
-```
-
-## Dataset
-
-This project uses the Animals-10 image classification dataset.
-
-The dataset itself is not included in this repository.
-
-After downloading the dataset, follow the preprocessing instructions in `src/prepare_data.py`.
-
-## Technologies
-
-* Python
-* TensorFlow
-* Keras
-* NumPy
-* Matplotlib
-* scikit-learn
-* Google Colab
-* Jupyter Notebook
-
-## What I Learned
-
-Through this project I gained practical experience with:
-
-* Convolutional neural networks
-* Image preprocessing
-* Data augmentation
-* Batch Normalization
-* Dropout regularization
-* Model training and validation
-* Overfitting analysis
-* Classification metrics
-* Confusion matrices
-* Experimental evaluation
-
-## Future Improvements
-
-Possible improvements include:
-
-* Transfer learning using pretrained architectures
-* Comparing RGB and grayscale inputs
-* Hyperparameter tuning
-* More systematic data augmentation experiments
-* Evaluating additional model architectures
-* Deploying the trained model for inference
+- Consolidate the three near-duplicate CNN-building cells in `animals_cnn.ipynb` into one parameterized function instead of copy-pasted blocks.
+- Capture and commit the output of experiment #4 (or drop it if it doesn't add anything over #3).
+- Try transfer learning from a pretrained backbone as a stronger baseline than training from scratch.
